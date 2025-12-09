@@ -8,6 +8,53 @@ let typingUsers = new Set();
 let messageReactions = {};
 const availableEmojis = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
+// Avatar and Dark Mode utilities
+function getAvatarColor(username) {
+    const colors = [
+        '#e74c3c', '#3498db', '#2ecc71', '#f39c12', 
+        '#9b59b6', '#1abc9c', '#e67e22', '#34495e',
+        '#16a085', '#27ae60', '#2980b9', '#8e44ad',
+        '#c0392b', '#d35400', '#7f8c8d', '#f1c40f'
+    ];
+    let hash = 0;
+    for (let i = 0; i < username.length; i++) {
+        hash = username.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+}
+
+function getInitials(username) {
+    return username.substring(0, 2).toUpperCase();
+}
+
+function createAvatar(username, size = 40) {
+    const avatar = document.createElement('div');
+    avatar.className = size === 32 ? 'user-avatar' : 'message-avatar';
+    avatar.style.backgroundColor = getAvatarColor(username);
+    avatar.textContent = getInitials(username);
+    if (size !== 32) {
+        avatar.style.width = size + 'px';
+        avatar.style.height = size + 'px';
+    }
+    return avatar;
+}
+
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
+    document.getElementById('darkModeToggle').textContent = isDark ? '☀️' : '🌙';
+}
+
+function loadDarkModePreference() {
+    const darkMode = localStorage.getItem('darkMode');
+    if (darkMode === 'enabled') {
+        document.body.classList.add('dark-mode');
+        const toggle = document.getElementById('darkModeToggle');
+        if (toggle) toggle.textContent = '☀️';
+    }
+}
+
 // Initialize SignalR connection
 function initializeConnection() {
     connection = new signalR.HubConnectionBuilder()
@@ -172,22 +219,31 @@ function displayMessage(sender, message, timestamp, isOwn, isPrivate = false, me
     messageDiv.className = `message ${isOwn ? 'own' : ''} ${isPrivate ? 'private' : ''}`;
     if (messageId) messageDiv.dataset.messageId = messageId;
     
+    // Create avatar
+    const avatar = createAvatar(sender, 40);
+    
     const reactionsHtml = messageId ? `
         <div class="message-reactions" id="reactions-${messageId}"></div>
         <button class="add-reaction-btn" onclick="showEmojiPicker(event, '${messageId}')">😀+</button>
     ` : '';
     
-    messageDiv.innerHTML = `
-        <div class="message-content">
-            <div class="message-header">
-                <span class="message-sender">${escapeHtml(sender)}</span>
-                <span class="message-time">${timestamp}</span>
-            </div>
-            <div class="message-text">${escapeHtml(message)}</div>
-            ${reactionsHtml}
+    const wrapper = document.createElement('div');
+    wrapper.className = 'message-wrapper';
+    wrapper.appendChild(avatar);
+    
+    const content = document.createElement('div');
+    content.className = 'message-content';
+    content.innerHTML = `
+        <div class="message-header">
+            <span class="message-sender">${escapeHtml(sender)}</span>
+            <span class="message-time">${timestamp}</span>
         </div>
+        <div class="message-text">${escapeHtml(message)}</div>
+        ${reactionsHtml}
     `;
     
+    wrapper.appendChild(content);
+    messageDiv.appendChild(wrapper);
     container.appendChild(messageDiv);
     container.scrollTop = container.scrollHeight;
 }
@@ -209,12 +265,18 @@ function displaySystemMessage(message) {
 
 function updateUsersList(users) {
     const list = document.getElementById('usersList');
-    list.innerHTML = users.map(user => `
-        <div class="user-item">
-            <div class="user-status"></div>
-            <span>${escapeHtml(user)}</span>
-        </div>
-    `).join('');
+    list.innerHTML = users.map(user => {
+        const avatarHtml = `<div class="user-avatar" style="background-color: ${getAvatarColor(user)}">${getInitials(user)}</div>`;
+        return `
+            <div class="user-item">
+                ${avatarHtml}
+                <div class="user-info">
+                    <span>${escapeHtml(user)}</span>
+                    <div class="user-status"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 function updateRoomsList() {
@@ -402,4 +464,5 @@ document.getElementById('createRoomModal').addEventListener('click', (e) => {
 // Handle input for typing indicator
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('messageInput').addEventListener('input', handleTyping);
+    loadDarkModePreference();
 });

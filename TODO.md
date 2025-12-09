@@ -7,8 +7,8 @@
 - [X] Message history - Store messages in a database (SQLite/PostgreSQL) so users see past conversations
 
 ## User Experience
-- [ ] User avatars - Generate avatars using initials or allow image uploads
-- [ ] Dark mode toggle - Switch between light/dark themes
+- [X] User avatars - Generate avatars using initials or allow image uploads
+- [X] Dark mode toggle - Switch between light/dark themes
 - [ ] Sound notifications - Play a sound when new messages arrive
 - [ ] Desktop notifications - Browser push notifications for messages when tab is unfocused
 - [ ] Message timestamps - "2 minutes ago" relative time display
