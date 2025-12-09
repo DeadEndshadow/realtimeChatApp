@@ -23,3 +23,4 @@
 /home/tom/Scripts/realtimeChat/obj/Debug/net8.0/RealtimeChat.pdb
 /home/tom/Scripts/realtimeChat/obj/Debug/net8.0/RealtimeChat.genruntimeconfig.cache
 /home/tom/Scripts/realtimeChat/obj/Debug/net8.0/ref/RealtimeChat.dll
+/home/tom/Scripts/realtimeChat/obj/Debug/net8.0/RealtimeChat.sourcelink.json

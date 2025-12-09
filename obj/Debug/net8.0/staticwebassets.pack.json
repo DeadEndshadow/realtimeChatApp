@@ -1,8 +1,20 @@
 {
   "Files": [
     {
+      "Id": "/home/tom/Scripts/realtimeChat/wwwroot/css/style.css",
+      "PackagePath": "staticwebassets/css/style.css"
+    },
+    {
       "Id": "/home/tom/Scripts/realtimeChat/wwwroot/index.html",
       "PackagePath": "staticwebassets/index.html"
+    },
+    {
+      "Id": "/home/tom/Scripts/realtimeChat/wwwroot/index.html.bak",
+      "PackagePath": "staticwebassets/index.html.bak"
+    },
+    {
+      "Id": "/home/tom/Scripts/realtimeChat/wwwroot/js/chat.js",
+      "PackagePath": "staticwebassets/js/chat.js"
     },
     {
       "Id": "obj/Debug/net8.0/staticwebassets/msbuild.RealtimeChat.Microsoft.AspNetCore.StaticWebAssets.props",
