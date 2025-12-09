@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using RealtimeChat.Data;
 using RealtimeChat.Models;
 
 namespace RealtimeChat.Hubs;
 
 public class ChatHub : Hub
 {
+    private readonly ChatDbContext _dbContext;
     private static readonly Dictionary<string, string> ConnectedUsers = new();
     private static readonly Dictionary<string, string> UserRooms = new(); // ConnectionId -> RoomName
     private static readonly Dictionary<string, Dictionary<string, HashSet<string>>> MessageReactions = new();
@@ -14,7 +17,11 @@ public class ChatHub : Hub
         ["random"] = new RoomInfo { Name = "random", DisplayName = "#random", IsPrivate = false, Creator = "system" },
         ["tech"] = new RoomInfo { Name = "tech", DisplayName = "#tech", IsPrivate = false, Creator = "system" }
     };
-    private static int _messageCounter = 0;
+
+    public ChatHub(ChatDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
 
     public async Task JoinChat(string username)
     {
@@ -60,7 +67,21 @@ public class ChatHub : Hub
             .Where(u => u != null)
             .ToList();
         
+        // Load message history from database (last 50 messages)
+        var messageHistory = await _dbContext.ChatMessages
+            .Where(m => m.RoomName == roomName)
+            .OrderByDescending(m => m.Timestamp)
+            .Take(50)
+            .OrderBy(m => m.Timestamp)
+            .ToListAsync();
+        
         await Clients.Caller.SendAsync("RoomJoined", Rooms[roomName], usersInRoom);
+        
+        // Send message history
+        if (messageHistory.Any())
+        {
+            await Clients.Caller.SendAsync("MessageHistory", messageHistory);
+        }
     }
 
     public async Task CreateRoom(string roomName, bool isPrivate)
@@ -114,9 +135,23 @@ public class ChatHub : Hub
         if (!UserRooms.TryGetValue(Context.ConnectionId, out var roomName))
             return;
 
-        var messageId = $"msg_{++_messageCounter}";
-        var timestamp = DateTime.Now.ToString("HH:mm:ss");
+        var messageId = $"msg_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+        var now = DateTime.Now;
+        var timestamp = now.ToString("HH:mm:ss");
         MessageReactions[messageId] = new Dictionary<string, HashSet<string>>();
+        
+        // Save to database
+        var chatMessage = new ChatMessage
+        {
+            Username = username,
+            Message = message,
+            RoomName = roomName,
+            Timestamp = now,
+            MessageId = messageId
+        };
+        
+        _dbContext.ChatMessages.Add(chatMessage);
+        await _dbContext.SaveChangesAsync();
         
         await Clients.Group(roomName).SendAsync("ReceiveMessage", username, message, timestamp, messageId);
     }

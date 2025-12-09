@@ -56,6 +56,19 @@ function initializeConnection() {
         updateTypingIndicator();
     });
 
+    // Handle message history
+    connection.on("MessageHistory", (messages) => {
+        messages.forEach(msg => {
+            const timestamp = new Date(msg.timestamp).toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false 
+            });
+            displayMessage(msg.username, msg.message, timestamp, msg.username === currentUsername, false, msg.messageId);
+        });
+    });
+
     // Handle room created
     connection.on("RoomCreated", (room) => {
         if (!room.isPrivate) {

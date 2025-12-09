@@ -4,7 +4,7 @@
 - [X] Typing indicators - Show "User is typing..." when someone is composing a message
 - [X] Message reactions - Add emoji reactions (👍 ❤️ 😂) to messages
 - [X] Chat rooms/channels - Create multiple rooms users can join (e.g., #general, #random)
-- [ ] Message history - Store messages in a database (SQLite/PostgreSQL) so users see past conversations
+- [X] Message history - Store messages in a database (SQLite/PostgreSQL) so users see past conversations
 
 ## User Experience
 - [ ] User avatars - Generate avatars using initials or allow image uploads
