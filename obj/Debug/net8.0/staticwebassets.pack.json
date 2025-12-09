@@ -1,0 +1,25 @@
+{
+  "Files": [
+    {
+      "Id": "/home/tom/Scripts/realtimeChat/wwwroot/index.html",
+      "PackagePath": "staticwebassets/index.html"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.RealtimeChat.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.build.RealtimeChat.props",
+      "PackagePath": "build\\RealtimeChat.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.buildMultiTargeting.RealtimeChat.props",
+      "PackagePath": "buildMultiTargeting\\RealtimeChat.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.buildTransitive.RealtimeChat.props",
+      "PackagePath": "buildTransitive\\RealtimeChat.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

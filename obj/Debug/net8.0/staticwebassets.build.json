@@ -1,0 +1,39 @@
+{
+  "Version": 1,
+  "Hash": "wnaHDUmX0Yx9KH2zqxzBBZHwkohLTg9aNFlln/vncBw=",
+  "Source": "RealtimeChat",
+  "BasePath": "_content/RealtimeChat",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "RealtimeChat/wwwroot",
+      "Source": "RealtimeChat",
+      "ContentRoot": "/home/tom/Scripts/realtimeChat/wwwroot/",
+      "BasePath": "_content/RealtimeChat",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "/home/tom/Scripts/realtimeChat/wwwroot/index.html",
+      "SourceId": "RealtimeChat",
+      "SourceType": "Discovered",
+      "ContentRoot": "/home/tom/Scripts/realtimeChat/wwwroot/",
+      "BasePath": "_content/RealtimeChat",
+      "RelativePath": "index.html",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/index.html"
+    }
+  ]
+}
