@@ -2,12 +2,15 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using RealtimeChat.Data;
 using RealtimeChat.Models;
+using RealtimeChat.Services;
 
 namespace RealtimeChat.Hubs;
 
 public class ChatHub : Hub
 {
     private readonly ChatDbContext _dbContext;
+    private readonly RateLimitService _rateLimitService;
+    private readonly EncryptionService _encryptionService;
     private static readonly Dictionary<string, string> ConnectedUsers = new();
     private static readonly Dictionary<string, string> UserRooms = new(); // ConnectionId -> RoomName
     private static readonly Dictionary<string, Dictionary<string, HashSet<string>>> MessageReactions = new();
@@ -18,9 +21,11 @@ public class ChatHub : Hub
         ["tech"] = new RoomInfo { Name = "tech", DisplayName = "#tech", IsPrivate = false, Creator = "system" }
     };
 
-    public ChatHub(ChatDbContext dbContext)
+    public ChatHub(ChatDbContext dbContext, RateLimitService rateLimitService, EncryptionService encryptionService)
     {
         _dbContext = dbContext;
+        _rateLimitService = rateLimitService;
+        _encryptionService = encryptionService;
     }
 
     public async Task JoinChat(string username)
@@ -77,10 +82,21 @@ public class ChatHub : Hub
         
         await Clients.Caller.SendAsync("RoomJoined", Rooms[roomName], usersInRoom);
         
-        // Send message history
+        // Send message history with decrypted messages
         if (messageHistory.Any())
         {
-            await Clients.Caller.SendAsync("MessageHistory", messageHistory);
+            // Decrypt messages before sending
+            var decryptedMessages = messageHistory.Select(m => new ChatMessage
+            {
+                Id = m.Id,
+                Username = m.Username,
+                Message = _encryptionService.Decrypt(m.Message),
+                RoomName = m.RoomName,
+                Timestamp = m.Timestamp,
+                MessageId = m.MessageId
+            }).ToList();
+            
+            await Clients.Caller.SendAsync("MessageHistory", decryptedMessages);
         }
     }
 
@@ -135,16 +151,27 @@ public class ChatHub : Hub
         if (!UserRooms.TryGetValue(Context.ConnectionId, out var roomName))
             return;
 
+        // Check rate limit
+        var rateLimitResult = _rateLimitService.CheckRateLimit(Context.ConnectionId);
+        if (!rateLimitResult.IsAllowed)
+        {
+            await Clients.Caller.SendAsync("RateLimitError", rateLimitResult.Reason);
+            return;
+        }
+
+        // Encrypt the message before storing
+        var encryptedMessage = _encryptionService.Encrypt(message);
+
         var messageId = $"msg_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
         var now = DateTime.Now;
         var timestamp = now.ToString("HH:mm:ss");
         MessageReactions[messageId] = new Dictionary<string, HashSet<string>>();
         
-        // Save to database
+        // Save encrypted message to database
         var chatMessage = new ChatMessage
         {
             Username = username,
-            Message = message,
+            Message = encryptedMessage, // Store encrypted
             RoomName = roomName,
             Timestamp = now,
             MessageId = messageId
@@ -153,6 +180,7 @@ public class ChatHub : Hub
         _dbContext.ChatMessages.Add(chatMessage);
         await _dbContext.SaveChangesAsync();
         
+        // Send decrypted message to clients
         await Clients.Group(roomName).SendAsync("ReceiveMessage", username, message, timestamp, messageId);
     }
 

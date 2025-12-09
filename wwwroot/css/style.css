@@ -639,6 +639,12 @@ body {
     border-color: #667eea;
 }
 
+.chat-input input:disabled {
+    background: var(--system-message-bg);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 .chat-input button {
     padding: 15px 30px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

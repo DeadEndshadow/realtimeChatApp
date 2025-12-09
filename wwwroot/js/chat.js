@@ -146,6 +146,20 @@ function initializeConnection() {
         updateMessageReactions(messageId);
     });
 
+    // Handle rate limit errors
+    connection.on("RateLimitError", (message) => {
+        displaySystemMessage(`⚠️ ${message}`);
+        const input = document.getElementById('messageInput');
+        input.disabled = true;
+        input.placeholder = "Rate limited...";
+        
+        // Re-enable after a short delay
+        setTimeout(() => {
+            input.disabled = false;
+            input.placeholder = "Type your message...";
+        }, 3000);
+    });
+
     // Connection state handlers
     connection.onreconnecting(() => {
         updateConnectionStatus(false, "Reconnecting...");

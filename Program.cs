@@ -1,12 +1,20 @@
 using Microsoft.EntityFrameworkCore;
 using RealtimeChat.Data;
 using RealtimeChat.Hubs;
+using RealtimeChat.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add database
 builder.Services.AddDbContext<ChatDbContext>(options =>
     options.UseSqlite("Data Source=chat.db"));
+
+// Add services
+builder.Services.AddSingleton<RateLimitService>(sp => 
+    new RateLimitService(maxMessagesPerWindow: 10, timeWindowSeconds: 10, banDurationSeconds: 30));
+
+builder.Services.AddSingleton<EncryptionService>(sp => 
+    new EncryptionService("YourSecureEncryptionKey2024!ChangeThis"));
 
 // Add SignalR
 builder.Services.AddSignalR();

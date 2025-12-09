@@ -29,7 +29,7 @@
 - [ ] Voice messages - Record and send audio clips
 
 ## Technical Improvements
-- [ ] Rate limiting - Prevent spam
-- [ ] Message encryption - End-to-end encryption for privacy
+- [X] Rate limiting - Prevent spam
+- [X] Message encryption - End-to-end encryption for privacy
 - [ ] Mobile responsive - Better mobile layout
 - [ ] PWA support - Install as a mobile/desktop app
