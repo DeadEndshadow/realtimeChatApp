@@ -8,6 +8,112 @@ let typingUsers = new Set();
 let messageReactions = {};
 const availableEmojis = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
+// Notification settings
+let notificationSound = null;
+let notificationsEnabled = false;
+let soundEnabled = true;
+
+// Initialize notification sound (using Web Audio API to generate a notification sound)
+function initNotificationSound() {
+    soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+    notificationsEnabled = localStorage.getItem('notificationsEnabled') === 'true';
+}
+
+function playNotificationSound() {
+    if (!soundEnabled) return;
+    
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (error) {
+        console.log('Could not play notification sound:', error);
+    }
+}
+
+function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                notificationsEnabled = true;
+                localStorage.setItem('notificationsEnabled', 'true');
+            }
+        });
+    }
+}
+
+function showDesktopNotification(sender, message) {
+    if (!notificationsEnabled || document.hasFocus()) return;
+    
+    if ('Notification' in window && Notification.permission === 'granted') {
+        const notification = new Notification(`${sender} in ${currentRoom}`, {
+            body: message.substring(0, 100),
+            icon: '/favicon.ico',
+            badge: '/favicon.ico',
+            tag: 'chat-message',
+            renotify: false
+        });
+        
+        notification.onclick = () => {
+            window.focus();
+            notification.close();
+        };
+        
+        setTimeout(() => notification.close(), 5000);
+    }
+}
+
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem('soundEnabled', soundEnabled.toString());
+    updateSoundButton();
+}
+
+function updateSoundButton() {
+    const btn = document.getElementById('soundToggle');
+    if (btn) {
+        btn.textContent = soundEnabled ? '🔊' : '🔇';
+        btn.title = soundEnabled ? 'Sound ON' : 'Sound OFF';
+    }
+}
+
+// Relative time formatting
+function getRelativeTime(timestamp) {
+    const now = new Date();
+    const messageTime = new Date(timestamp);
+    const diffMs = now - messageTime;
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffSecs < 60) return 'just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    
+    return messageTime.toLocaleDateString();
+}
+
+function updateRelativeTimestamps() {
+    document.querySelectorAll('.message-time[data-timestamp]').forEach(element => {
+        const timestamp = element.getAttribute('data-timestamp');
+        element.textContent = getRelativeTime(timestamp);
+    });
+}
+
 // Avatar and Dark Mode utilities
 function getAvatarColor(username) {
     const colors = [
@@ -64,12 +170,25 @@ function initializeConnection() {
 
     // Handle incoming messages
     connection.on("ReceiveMessage", (sender, message, timestamp, messageId) => {
-        displayMessage(sender, message, timestamp, sender === currentUsername, false, messageId);
+        const isOwnMessage = sender === currentUsername;
+        displayMessage(sender, message, timestamp, isOwnMessage, false, messageId);
+        
+        // Play notification sound and show desktop notification for messages from others
+        if (!isOwnMessage) {
+            playNotificationSound();
+            showDesktopNotification(sender, message);
+        }
     });
 
     // Handle private messages
     connection.on("ReceivePrivateMessage", (sender, message, timestamp) => {
-        displayMessage(sender, message, timestamp, sender.startsWith("To "), true);
+        const isOwnMessage = sender.startsWith("To ");
+        displayMessage(sender, message, timestamp, isOwnMessage, true);
+        
+        if (!isOwnMessage) {
+            playNotificationSound();
+            showDesktopNotification(sender, message);
+        }
     });
 
     // Handle user joined room
@@ -241,6 +360,21 @@ function displayMessage(sender, message, timestamp, isOwn, isPrivate = false, me
         <button class="add-reaction-btn" onclick="showEmojiPicker(event, '${messageId}')">😀+</button>
     ` : '';
     
+    // Parse timestamp - if it's just time (HH:mm:ss), convert to full date
+    let fullTimestamp;
+    if (timestamp.includes(':') && !timestamp.includes('T')) {
+        // Time only format from server (HH:mm:ss)
+        const today = new Date();
+        const [hours, minutes, seconds] = timestamp.split(':');
+        fullTimestamp = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 
+                                  parseInt(hours), parseInt(minutes), parseInt(seconds || 0));
+    } else {
+        // Full ISO timestamp from database
+        fullTimestamp = new Date(timestamp);
+    }
+    
+    const relativeTime = getRelativeTime(fullTimestamp);
+    
     const wrapper = document.createElement('div');
     wrapper.className = 'message-wrapper';
     wrapper.appendChild(avatar);
@@ -250,7 +384,7 @@ function displayMessage(sender, message, timestamp, isOwn, isPrivate = false, me
     content.innerHTML = `
         <div class="message-header">
             <span class="message-sender">${escapeHtml(sender)}</span>
-            <span class="message-time">${timestamp}</span>
+            <span class="message-time" data-timestamp="${fullTimestamp.toISOString()}" title="${fullTimestamp.toLocaleString()}">${relativeTime}</span>
         </div>
         <div class="message-text">${escapeHtml(message)}</div>
         ${reactionsHtml}
@@ -479,4 +613,12 @@ document.getElementById('createRoomModal').addEventListener('click', (e) => {
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('messageInput').addEventListener('input', handleTyping);
     loadDarkModePreference();
+    initNotificationSound();
+    updateSoundButton();
+    
+    // Request notification permission after a short delay
+    setTimeout(requestNotificationPermission, 2000);
+    
+    // Update relative timestamps every 30 seconds
+    setInterval(updateRelativeTimestamps, 30000);
 });

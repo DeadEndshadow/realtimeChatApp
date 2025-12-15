@@ -39,9 +39,12 @@
             <div class="chat-main">
                 <div class="chat-header">
                     <h2 id="currentRoomName">#general</h2>
-                    <div class="connection-status">
-                        <div class="status-dot" id="statusDot"></div>
-                        <span id="connectionStatus">Connecting...</span>
+                    <div class="header-controls">
+                        <button class="sound-toggle" id="soundToggle" onclick="toggleSound()" title="Toggle sound">🔊</button>
+                        <div class="connection-status">
+                            <div class="status-dot" id="statusDot"></div>
+                            <span id="connectionStatus">Connecting...</span>
+                        </div>
                     </div>
                 </div>
                 <div class="messages-container" id="messagesContainer">
